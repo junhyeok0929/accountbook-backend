@@ -10,10 +10,12 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class TransactionUpdateRequestDto {
 
-    // 수정할 수 있는 정보들
     private LocalDate transactionDate;
     private TransactionType type;
     private Integer amount;
     private String category;
-    private String memo;
+    
+    // 일기 수정을 위한 필드 추가
+    private String diaryTitle;
+    private String diaryContent;
 }

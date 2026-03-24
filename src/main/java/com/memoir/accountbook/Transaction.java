@@ -3,7 +3,6 @@ package com.memoir.accountbook;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -36,7 +35,10 @@ public class Transaction {
     @Column(nullable = false)
     private String category;
 
-    private String memo;
+    // 기존 memo 대신 Diary와 1:1 관계 형성
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "diary_id")
+    private Diary diary;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -46,12 +48,16 @@ public class Transaction {
         this.createdAt = LocalDateTime.now();
     }
 
-    // --- ▼▼▼ 이 update 메소드를 통째로 추가해주세요 ▼▼▼ ---
-    public void update(LocalDate transactionDate, TransactionType type, Integer amount, String category, String memo) {
+    public void update(LocalDate transactionDate, TransactionType type, Integer amount, String category, Diary diary) {
         this.transactionDate = transactionDate;
         this.type = type;
         this.amount = amount;
         this.category = category;
-        this.memo = memo;
+        this.diary = diary;
+    }
+
+    // 일기 설정을 위한 편의 메서드
+    public void setDiary(Diary diary) {
+        this.diary = diary;
     }
 }
