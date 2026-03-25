@@ -119,9 +119,14 @@ public class TransactionService {
     }
 
     @Transactional
-    public void updateTransaction(Long transactionId, TransactionUpdateRequestDto requestDto) {
+    public void updateTransaction(String email, Long transactionId, TransactionUpdateRequestDto requestDto) {
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("거래 내역을 찾을 수 없습니다."));
+
+        // 보안 검증: 현재 로그인한 사용자가 이 거래 내역의 주인인지 확인
+        if (!transaction.getMember().getEmail().equals(email)) {
+            throw new RuntimeException("해당 거래 내역을 수정할 권한이 없습니다.");
+        }
 
         Diary diary = transaction.getDiary();
         if (requestDto.getDiaryContent() != null && !requestDto.getDiaryContent().trim().isEmpty()) {
@@ -147,8 +152,16 @@ public class TransactionService {
     }
 
     @Transactional
-    public void deleteTransaction(Long id) {
-        transactionRepository.deleteById(id);
+    public void deleteTransaction(String email, Long id) {
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("거래 내역을 찾을 수 없습니다."));
+
+        // 보안 검증: 현재 로그인한 사용자가 이 거래 내역의 주인인지 확인
+        if (!transaction.getMember().getEmail().equals(email)) {
+            throw new RuntimeException("해당 거래 내역을 삭제할 권한이 없습니다.");
+        }
+
+        transactionRepository.delete(transaction);
     }
 
     public List<TransactionResponseDto> findMyDailyTransactions(String email, LocalDate date) {
@@ -161,9 +174,15 @@ public class TransactionService {
                 .collect(Collectors.toList());
     }
 
-    public TransactionResponseDto findMyTransactionById(Long id) {
-        return transactionRepository.findById(id)
-                .map(TransactionResponseDto::new)
+    public TransactionResponseDto findMyTransactionById(String email, Long id) {
+        Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("거래 내역을 찾을 수 없습니다."));
+
+        // 보안 검증: 현재 로그인한 사용자가 이 거래 내역의 주인인지 확인
+        if (!transaction.getMember().getEmail().equals(email)) {
+            throw new RuntimeException("해당 거래 내역을 조회할 권한이 없습니다.");
+        }
+
+        return new TransactionResponseDto(transaction);
     }
 }

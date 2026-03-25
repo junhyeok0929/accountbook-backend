@@ -15,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.memoir.accountbook.util.SecurityUtil;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/transactions")
@@ -27,8 +29,7 @@ public class TransactionController {
     @GetMapping("/daily")
     public ResponseEntity<List<TransactionResponseDto>> findMyDailyTransactions(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
+        String email = SecurityUtil.getCurrentUserEmail();
         List<TransactionResponseDto> transactions = transactionService.findMyDailyTransactions(email, date);
         return ResponseEntity.ok(transactions);
     }
@@ -38,8 +39,7 @@ public class TransactionController {
     public ResponseEntity<List<TransactionResponseDto>> findMyMonthlyTransactions(
             @RequestParam int year,
             @RequestParam int month) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
+        String email = SecurityUtil.getCurrentUserEmail();
         List<TransactionResponseDto> transactions = transactionService.findMyMonthlyTransactions(email, year, month);
         return ResponseEntity.ok(transactions);
     }
@@ -49,8 +49,7 @@ public class TransactionController {
     public ResponseEntity<MonthlySummaryResponseDto> getMonthlySummary(
             @RequestParam int year,
             @RequestParam int month) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
+        String email = SecurityUtil.getCurrentUserEmail();
         MonthlySummaryResponseDto summary = transactionService.getMonthlySummary(email, year, month);
         return ResponseEntity.ok(summary);
     }
@@ -59,47 +58,44 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<?> createTransaction(@RequestBody TransactionCreateRequestDto requestDto) {
         try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || !auth.isAuthenticated()) {
-                return ResponseEntity.status(401).body("로그인이 필요합니다.");
-            }
-            String email = auth.getName(); 
+            String email = SecurityUtil.getCurrentUserEmail();
             Long transactionId = transactionService.createTransaction(email, requestDto);
             return ResponseEntity.status(201).body(transactionId);
         } catch (Exception e) {
-            e.printStackTrace(); // 서버 로그에 에러 출력
             return ResponseEntity.status(500).body("저장 중 오류 발생: " + e.getMessage());
         }
     }
 
-    // 특정 거래 내역 상세 조회
+    // 특정 거래 내역 상세 조회 (보안 강화: email 추가)
     @GetMapping("/{transactionId}")
     public ResponseEntity<TransactionResponseDto> findMyTransactionById(@PathVariable Long transactionId) {
-        TransactionResponseDto transaction = transactionService.findMyTransactionById(transactionId);
+        String email = SecurityUtil.getCurrentUserEmail();
+        TransactionResponseDto transaction = transactionService.findMyTransactionById(email, transactionId);
         return ResponseEntity.ok(transaction);
     }
 
-    // 거래 내역 및 일기 수정
+    // 거래 내역 및 일기 수정 (보안 강화: email 추가)
     @PutMapping("/{transactionId}")
     public ResponseEntity<Void> updateTransaction(
             @PathVariable Long transactionId,
             @RequestBody TransactionUpdateRequestDto requestDto) {
-        transactionService.updateTransaction(transactionId, requestDto);
+        String email = SecurityUtil.getCurrentUserEmail();
+        transactionService.updateTransaction(email, transactionId, requestDto);
         return ResponseEntity.ok().build();
     }
 
-    // 거래 내역 및 일기 삭제
+    // 거래 내역 및 일기 삭제 (보안 강화: email 추가)
     @DeleteMapping("/{transactionId}")
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long transactionId) {
-        transactionService.deleteTransaction(transactionId);
+        String email = SecurityUtil.getCurrentUserEmail();
+        transactionService.deleteTransaction(email, transactionId);
         return ResponseEntity.ok().build();
     }
 
     // 거래 내역 및 일기 검색
     @GetMapping("/search")
     public ResponseEntity<List<TransactionResponseDto>> searchTransactions(@RequestParam String query) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
+        String email = SecurityUtil.getCurrentUserEmail();
         List<TransactionResponseDto> results = transactionService.searchTransactions(email, query);
         return ResponseEntity.ok(results);
     }
