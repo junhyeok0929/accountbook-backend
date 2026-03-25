@@ -3,7 +3,6 @@ package com.memoir.accountbook;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,12 +10,12 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "transactions") // [수정!] 예약어 회피를 위해 테이블 명칭 변경
-public class Transaction {
+@Table(name = "favorite_transactions")
+public class FavoriteTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "transaction_id")
+    @Column(name = "favorite_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -24,7 +23,7 @@ public class Transaction {
     private Member member;
 
     @Column(nullable = false)
-    private LocalDate transactionDate;
+    private String templateName; // 예: '점심식사', '교통비'
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -36,11 +35,6 @@ public class Transaction {
     @Column(nullable = false)
     private String category;
 
-    // 기존 memo 대신 Diary와 1:1 관계 형성
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "diary_id")
-    private Diary diary;
-
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -49,16 +43,10 @@ public class Transaction {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void update(LocalDate transactionDate, TransactionType type, Integer amount, String category, Diary diary) {
-        this.transactionDate = transactionDate;
+    public void update(String templateName, TransactionType type, Integer amount, String category) {
+        this.templateName = templateName;
         this.type = type;
         this.amount = amount;
         this.category = category;
-        this.diary = diary;
-    }
-
-    // 일기 설정을 위한 편의 메서드
-    public void setDiary(Diary diary) {
-        this.diary = diary;
     }
 }

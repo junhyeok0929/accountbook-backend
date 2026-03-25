@@ -22,32 +22,40 @@ public class TransactionService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public Long createTransaction(Long memberId, TransactionCreateRequestDto requestDto) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+    public Long createTransaction(String email, TransactionCreateRequestDto requestDto) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다. (이메일: " + email + ")"));
 
+        // 1. 일기(Diary) 데이터가 있을 때만 객체 생성
         Diary diary = null;
         if (requestDto.getDiaryContent() != null && !requestDto.getDiaryContent().trim().isEmpty()) {
             diary = Diary.builder()
                     .title(requestDto.getDiaryTitle())
                     .content(requestDto.getDiaryContent())
                     .build();
+            // (참고) @PrePersist에 의해 createdAt은 자동 생성됩니다.
         }
 
+        // 2. 가계부(Transaction) 객체 생성 및 일기 연결
         Transaction transaction = Transaction.builder()
                 .member(member)
                 .transactionDate(requestDto.getTransactionDate())
                 .type(requestDto.getType())
                 .amount(requestDto.getAmount())
                 .category(requestDto.getCategory())
-                .diary(diary)
+                .diary(diary) // CascadeType.ALL에 의해 diary도 같이 저장됨
                 .build();
 
+        // 3. DB 저장 및 ID 반환
         return transactionRepository.save(transaction).getId();
     }
 
     // 월별 요약 조회 (카테고리별 통계 포함)
-    public MonthlySummaryResponseDto getMonthlySummary(Long memberId, int year, int month) {
+    public MonthlySummaryResponseDto getMonthlySummary(String email, int year, int month) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+        Long memberId = member.getId();
+
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDate start = yearMonth.atDay(1);
         LocalDate end = yearMonth.atEndOfMonth();
@@ -87,12 +95,25 @@ public class TransactionService {
     }
 
     // 월별 상세 거래 목록 조회
-    public List<TransactionResponseDto> findMyMonthlyTransactions(Long memberId, int year, int month) {
+    public List<TransactionResponseDto> findMyMonthlyTransactions(String email, int year, int month) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+        Long memberId = member.getId();
+
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDate start = yearMonth.atDay(1);
         LocalDate end = yearMonth.atEndOfMonth();
 
         return transactionRepository.findByMember_IdAndTransactionDateBetween(memberId, start, end).stream()
+                .map(TransactionResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<TransactionResponseDto> searchTransactions(String email, String query) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+        
+        return transactionRepository.searchByMemberAndQuery(member.getId(), query).stream()
                 .map(TransactionResponseDto::new)
                 .collect(Collectors.toList());
     }
@@ -130,7 +151,11 @@ public class TransactionService {
         transactionRepository.deleteById(id);
     }
 
-    public List<TransactionResponseDto> findMyDailyTransactions(Long memberId, LocalDate date) {
+    public List<TransactionResponseDto> findMyDailyTransactions(String email, LocalDate date) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+        Long memberId = member.getId();
+
         return transactionRepository.findByMember_IdAndTransactionDate(memberId, date).stream()
                 .map(TransactionResponseDto::new)
                 .collect(Collectors.toList());

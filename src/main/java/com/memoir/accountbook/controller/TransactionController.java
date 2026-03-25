@@ -10,13 +10,15 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"})
 public class TransactionController {
 
     private final TransactionService transactionService;
@@ -25,8 +27,9 @@ public class TransactionController {
     @GetMapping("/daily")
     public ResponseEntity<List<TransactionResponseDto>> findMyDailyTransactions(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        Long memberId = 1L;
-        List<TransactionResponseDto> transactions = transactionService.findMyDailyTransactions(memberId, date);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        List<TransactionResponseDto> transactions = transactionService.findMyDailyTransactions(email, date);
         return ResponseEntity.ok(transactions);
     }
 
@@ -35,8 +38,9 @@ public class TransactionController {
     public ResponseEntity<List<TransactionResponseDto>> findMyMonthlyTransactions(
             @RequestParam int year,
             @RequestParam int month) {
-        Long memberId = 1L; 
-        List<TransactionResponseDto> transactions = transactionService.findMyMonthlyTransactions(memberId, year, month);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        List<TransactionResponseDto> transactions = transactionService.findMyMonthlyTransactions(email, year, month);
         return ResponseEntity.ok(transactions);
     }
 
@@ -45,17 +49,27 @@ public class TransactionController {
     public ResponseEntity<MonthlySummaryResponseDto> getMonthlySummary(
             @RequestParam int year,
             @RequestParam int month) {
-        Long memberId = 1L;
-        MonthlySummaryResponseDto summary = transactionService.getMonthlySummary(memberId, year, month);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        MonthlySummaryResponseDto summary = transactionService.getMonthlySummary(email, year, month);
         return ResponseEntity.ok(summary);
     }
 
     // 새 거래 내역 및 일기 작성
     @PostMapping
-    public ResponseEntity<Void> createTransaction(@RequestBody TransactionCreateRequestDto requestDto) {
-        Long memberId = 1L;
-        transactionService.createTransaction(memberId, requestDto);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> createTransaction(@RequestBody TransactionCreateRequestDto requestDto) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).body("로그인이 필요합니다.");
+            }
+            String email = auth.getName(); 
+            Long transactionId = transactionService.createTransaction(email, requestDto);
+            return ResponseEntity.status(201).body(transactionId);
+        } catch (Exception e) {
+            e.printStackTrace(); // 서버 로그에 에러 출력
+            return ResponseEntity.status(500).body("저장 중 오류 발생: " + e.getMessage());
+        }
     }
 
     // 특정 거래 내역 상세 조회
@@ -79,5 +93,14 @@ public class TransactionController {
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long transactionId) {
         transactionService.deleteTransaction(transactionId);
         return ResponseEntity.ok().build();
+    }
+
+    // 거래 내역 및 일기 검색
+    @GetMapping("/search")
+    public ResponseEntity<List<TransactionResponseDto>> searchTransactions(@RequestParam String query) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        List<TransactionResponseDto> results = transactionService.searchTransactions(email, query);
+        return ResponseEntity.ok(results);
     }
 }

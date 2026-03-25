@@ -4,11 +4,15 @@ import com.memoir.accountbook.TransactionType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
 
 @Getter
 @NoArgsConstructor
 public class TransactionCreateRequestDto {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") // [JSON 전용 날짜 포맷 추가]
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate transactionDate;
     private TransactionType type;
     private Integer amount;
