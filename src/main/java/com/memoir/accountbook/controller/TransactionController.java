@@ -5,17 +5,18 @@ import com.memoir.accountbook.dto.TransactionCreateRequestDto;
 import com.memoir.accountbook.dto.TransactionResponseDto;
 import com.memoir.accountbook.dto.TransactionUpdateRequestDto;
 import com.memoir.accountbook.service.TransactionService;
+import com.memoir.accountbook.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
-
-import com.memoir.accountbook.util.SecurityUtil;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +25,31 @@ import com.memoir.accountbook.util.SecurityUtil;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final String UPLOAD_DIR = "D:/dev/uploads/";
+
+    // 이미지 파일 업로드 API
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("파일이 없습니다.");
+        }
+
+        try {
+            // 1. 저장할 파일명 생성 (UUID 활용)
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String savedFilename = UUID.randomUUID().toString() + extension;
+
+            // 2. 파일 저장
+            File dest = new File(UPLOAD_DIR + savedFilename);
+            file.transferTo(dest);
+
+            // 3. 저장된 파일명 반환
+            return ResponseEntity.ok(savedFilename);
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body("파일 저장 중 오류 발생: " + e.getMessage());
+        }
+    }
 
     // 일별 거래 내역 조회
     @GetMapping("/daily")

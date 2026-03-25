@@ -23,6 +23,8 @@ public class Diary {
 
     private String title; // 일기 제목 (선택 사항)
 
+    private String imageUrl; // [추가] 사진 파일 이름 또는 경로
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -34,8 +36,9 @@ public class Diary {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void update(String title, String content) {
+    public void update(String title, String content, String imageUrl) {
         this.title = title;
         this.content = content;
+        this.imageUrl = imageUrl;
     }
 }

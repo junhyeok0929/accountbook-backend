@@ -18,4 +18,5 @@ public class TransactionUpdateRequestDto {
     // 일기 수정을 위한 필드 추가
     private String diaryTitle;
     private String diaryContent;
+    private String imageUrl; // [추가]
 }

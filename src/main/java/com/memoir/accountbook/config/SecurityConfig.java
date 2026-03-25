@@ -38,7 +38,7 @@ public class SecurityConfig {
 
         // 2. API 경로별 접근 권한 설정
         http.authorizeHttpRequests((authorize) -> authorize
-                .requestMatchers("/api/members/signup", "/api/members/login", "/h2-console/**").permitAll()
+                .requestMatchers("/api/members/signup", "/api/members/login", "/h2-console/**", "/uploads/**").permitAll() // [수정!] /uploads/** 추가
                 .anyRequest().authenticated()
         );
 

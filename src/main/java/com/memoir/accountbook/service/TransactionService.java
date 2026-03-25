@@ -32,6 +32,7 @@ public class TransactionService {
             diary = Diary.builder()
                     .title(requestDto.getDiaryTitle())
                     .content(requestDto.getDiaryContent())
+                    .imageUrl(requestDto.getImageUrl()) // [추가]
                     .build();
             // (참고) @PrePersist에 의해 createdAt은 자동 생성됩니다.
         }
@@ -134,9 +135,10 @@ public class TransactionService {
                 diary = Diary.builder()
                         .title(requestDto.getDiaryTitle())
                         .content(requestDto.getDiaryContent())
+                        .imageUrl(requestDto.getImageUrl())
                         .build();
             } else {
-                diary.update(requestDto.getDiaryTitle(), requestDto.getDiaryContent());
+                diary.update(requestDto.getDiaryTitle(), requestDto.getDiaryContent(), requestDto.getImageUrl());
             }
         } else {
             diary = null;
